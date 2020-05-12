@@ -28,7 +28,6 @@
 from dbus.mainloop.glib import DBusGMainLoop
 import dbus
 import dbus.service
-from gobject import timeout_add, source_remove, MainLoop
 from os import path, remove, rename, environ
 import sys
 import signal
@@ -42,6 +41,14 @@ import logging
 from enum import IntEnum, unique
 import argparse
 
+try:
+	import gi
+except ImportError:
+	from gobject import timeout_add, source_remove, MainLoop
+else:
+	gi.require_version('GObject', '2.0')
+	from gi.repository.GObject import timeout_add, source_remove, MainLoop
+
 ## Major version.
 FIRMWARE_VERSION_MAJOR = 0x01
 ## Minor version.
@@ -52,6 +59,13 @@ version = (FIRMWARE_VERSION_MAJOR << 8) | FIRMWARE_VERSION_MINOR
 ## Dbus service name and interface name(s).
 InterfaceBusItem = 'com.victronenergy.BusItem'
 InterfaceSettings = 'com.victronenergy.Settings'
+
+PY3 = sys.version_info.major >= 3
+if PY3:
+	unicode = str
+	string_types = (str, )
+else:
+	string_types = (str, unicode)
 
 ## Supported types for convert xml-text to value.
 supportedTypes = {
@@ -409,7 +423,7 @@ class GroupObject(dbus.service.Object):
 		min = convertToType(itemType, minimum)
 		max = convertToType(itemType, maximum)
 
-		if type(value) != str and type(value) != unicode:
+		if not isinstance(value, string_types):
 			if min == 0 and max == 0:
 				min = None
 				max = None
@@ -571,7 +585,7 @@ class DevicesGroup(GroupObject):
 	# Make sure classInstanceStr is updated to a free one.
 	# returns False if the string cannot be parsed.
 	def assureFreeInstance(self, classInstanceStr, settingObject):
-		if not type(classInstanceStr) is dbus.String and not type(classInstanceStr) is str and not type(classInstanceStr) is unicode:
+		if not isinstance(classInstanceStr, (dbus.String,) + string_types):
 			return False, None
 		parts = classInstanceStr.split(":")
 		if len(parts) != 2:
@@ -582,9 +596,9 @@ class DevicesGroup(GroupObject):
 		except:
 			return False, None
 
-		taken = self.forAllSettings(lambda x: x.GetValue() if x is not settingObject and \
+		taken = list(self.forAllSettings(lambda x: x.GetValue() if x is not settingObject and \
 									x.id() == "ClassAndVrmInstance" and \
-									x.GetValue().startswith(devClass + ":") else None).values()
+									x.GetValue().startswith(devClass + ":") else None).values())
 
 		while True:
 			if classInstanceStr not in taken:
@@ -642,7 +656,7 @@ def writeToXmlFile(localSettings, settingsGroup):
 	localSettings.save(tree)
 
 def toBool(val):
-	if type(val) != str and type(val) != unicode:
+	if not isinstance(val, string_types):
 		return bool(val)
 
 	try:
@@ -676,7 +690,7 @@ def loadSettingsFile(name, settingsGroup):
 
 			defVal = convertToType(itemType, defVal)
 
-			if type(defVal) != str and type(defVal) != unicode:
+			if not isinstance(defVal, string_types):
 				minVal = convertToType(itemType, minVal)
 				maxVal = convertToType(itemType, maxVal)
 
