@@ -2,18 +2,49 @@
 
 [![Build Status](https://travis-ci.org/victronenergy/localsettings.svg?branch=master)](https://travis-ci.org/victronenergy/localsettings)
 
-D-Bus settings manager that interfaces between xml file on disk and D-Bus. It is a
-part of [Venus](https://github.com/victronenergy/venus/wiki). All programs that need
-non-volatile settings use this dbus service. And all code that changes settings from
-other processes, for example the GUI, do that via the D-Bus service of
-com.victronenergy.settings as well. Some reasons for doing it this way are:
-- one place to see all the settings
-- one log to see changes in the settings (/log/localsettings/*)
-- one place to reset all settings to factory-default
+__localsettings__ implements the
+[Venus](https://github.com/victronenergy/venus/wiki)
+D-Bus service ```com.victronenergy.settings``` which acts as a central
+broker for the management of persistent data required by programs
+running under Venus OS.
 
-## D-Bus API
-#### AddSetting
-This function can be called on any path, which is not a setting.
+Giving a central service control over persistent settings means that
+applications are relieved of the burden of managing their non-volatile
+data.
+It also means consistency: there is one place to see all the settings;
+one process maintaining a log of settings changes (under
+/log/localsettings/); and one mechanism for resetting all settings to
+factory-default.
+
+If you are writng a program that creates a new D-Bus service then
+you must use the settings service to acquire a unique DeviceInstance
+number for your service.
+
+If you are writing a program of any sort that needs to maintain its
+own persistent data or requires access to the persistent data of other
+programs then the settings service must be used as a proxy for all
+such access.
+
+## API
+
+```com.victronenergy.settings``` exposes the following D-Bus API.
+
+### AddSetting
+
+There are two usage patterns.
+
+### AddSetting(path, tuple)
+
+Where path should be set to
+
+
+
+As a side-effect this will create the D-Bus path
+/Settings/Devices/UniqueDeviceNumber/ClassAndVrmInstance and set its
+value appropriately.
+
+Add a new persistent setting and/or acquire a unique DeviceInstance
+number.
 
 Parameters:
 - Groupname
