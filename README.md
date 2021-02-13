@@ -35,58 +35,78 @@ settings service.
 
 There are two usage patterns.
 
-### AddSetting(*path*, *tuple*)
+In both cases, a setting already exists in Venus OS then the AddSetting()
+call will simply be ignored.
 
-This should be used by every application as it creates a new service
-as a means of obtaining a value for the service's /DeviceInstance
-property.
+The first pattern must be used by an application which wants to create
+a D-Bus service in order to obtain a unique, perhaps already existing,
+VRM instance number to be used as the service's /DeviceInstance property
+value.
 
-*path* should be set to the special value "/Settings/Devices/*service-name*/ClassAndVrmInstance".
-Exactly what value you supply for *service-name* is up to you, but it
-makes sense if it ties in the name you will use when you create your
-service.
+### AddSetting(*path*, *pair*)
 
-*tuple* should be set to a string of the form "*class*:*instance*",
-where *class* is the name of the service class ("tank" or whatever)
-and *instance* is a proposed DeviceInstance number.
+Create a new, persistent, service identifier.
 
-AddSetting will chack that the proposed *instance* number is unique
-within *class* and if it isn't modify *tuple* approprately before
-writing the value to *path* from which the calling application can
-recover it and extract the approved DeviceInstance number.
+*path* must be a string of the form
+"/Settings/Devices/*service-name*/ClassAndVrmInstance",
+where *service-name* is an arbitrary value, but it makes sense if it
+ties into the name you will use when you create your service.
 
+*pair* is a string of the form "*class*:*vrm-instance*", where *class*
+is the name of your service class ("battery", "tank" or whatever) and
+*vrm-instance* is a proposed VRM instance number.
 
+AddSetting will check if *path* exists and if so do nothing.
 
+If *path* does not exist, and the proposed *vrm-instance* value is unused
+within *class* then *pair* will be used as the value of *path*.
+If, on the other hand, *vrm-instance* is already in use, then path will be
+assigned the value "*class*:*unique*" where *unique* is a system assigned,
+guaranteed unique, VRM instance number.
 
-value appropriately.
+Returns 0 on success or a negative error value (see AddSettingError
+in the source for details).
 
-Add a new persistent setting and/or acquire a unique DeviceInstance
-number.
+On success, the calling application can recover the value of *path*,
+extract the second field of the returned pair and use this as the value
+of the new service /DeviceInstance property.
 
-Parameters:
-- Groupname
-- Setting name (can contain subpaths, for example display/brightness.
-  /display/brightness will work as well and has the same effect)
-- Default value
-- Type ('i' - integer, 'f' - float, 's' - string)
-- Min value
-- Max value
+### AddSetting(*groupname*, *settingname*, *initialvalue*, *type*, *min*, *max*)
 
-Return code:
-* 0 = OK
-* Negative, see AddSettingError in the source for details
+Add a persistent setting to Venus OS.
 
-Notes:
-* Set both min and max to 0 to work without a min and max value
-* Executing AddSetting for a path that already exists will not cause the existing
-  value to be changed. In other words, it is safe to call AddSetting without first
-  checking if that setting, aka path, is already there.
-* Vrm Device Instances: Localsettings can assign unique numbers per device class to a device. The single parameter for them is a tuple: `class:instance`, `battery:1` for example. When adding the special setting, /Settings/Devices/UniqueDeviceNumber/ClassAndVrmInstance, it will be set to an unique one. So if the default is set to battery:1 and that one already existed, it will get the next free unique number, and get set to `battery:2` for example.
+*groupname* specifies the group under which the setting should be
+created. For example "/Settings/MyApp".
 
+*settingname* is the name of the setting and can be a path if settings
+need to be organised hierarchically. For example "/StartMode".
 
+*initialvalue* is the value to be used if the specified setting
+does not already exist.
 
-#### AddSettings
-This dbus method call allows to add multiple settings at once which
+*type* is the data type of the setting ("s" says string, "i" says
+integer, "f" says float) and this must conform with the value supplied
+for *initialvalue*.
+
+*min* and *max* can be used to introduce validation thresholds for
+numeric types that will be applied when the specified setting is updated.
+Setting both *min* and *max* to 0 will prevent any validation checks.
+
+The full D-Bus path of the new setting is formed by concatenating
+*groupname* and *settingname* (interpolating a '/' if required).
+If the composite setting path already exists then the call to AddSetting()
+is ignored.
+
+Returns 0 on success or a negative error value (see AddSettingError
+in the source for details).
+
+### AddSettings
+
+Batch process the creation of persistent settings.
+This call is somewhat more convenient and efficient than multiple repeated
+calls to AddSetting().
+
+save some dbus method call allows to add multiple settings at once which
 saves some roundtrips if there are many settings like the gui has.
 
 Unlike the AddSetting, it doesn't make a distinction between groups
