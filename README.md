@@ -1,12 +1,11 @@
-# localsettings
+# Local setting
 
 [![Build Status](https://travis-ci.org/victronenergy/localsettings.svg?branch=master)](https://travis-ci.org/victronenergy/localsettings)
 
-__localsettings__ implements the
-[Venus](https://github.com/victronenergy/venus/wiki)
-D-Bus service ```com.victronenergy.settings``` which acts as a central
-broker for the management of persistent data required by programs
-running under Venus OS.
+[Venus OS](https://github.com/victronenergy/venus/wiki) implements
+a D-Bus service ```com.victronenergy.settings``` (the 'settings service')
+for management of any application's persistent (that is non-volatile)
+data or settings.
 
 Giving a central service control over persistent settings means that
 applications are relieved of the burden of managing their non-volatile
@@ -25,9 +24,12 @@ own persistent data or requires access to the persistent data of other
 programs then the settings service must be used as a proxy for all
 such access.
 
-## API
+At the time of writing, a Python library provides an interface to the
+settings service.
 
-```com.victronenergy.settings``` exposes the following D-Bus API.
+### D-Bus API
+
+```com.victronenergy.settings``` exposes the following API.
 
 ### AddSetting
 
