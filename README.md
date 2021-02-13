@@ -1,4 +1,4 @@
-# Local setting
+# localsettings
 
 [![Build Status](https://travis-ci.org/victronenergy/localsettings.svg?branch=master)](https://travis-ci.org/victronenergy/localsettings)
 
@@ -35,14 +35,29 @@ settings service.
 
 There are two usage patterns.
 
-### AddSetting(path, tuple)
+### AddSetting(*path*, *tuple*)
 
-Where path should be set to
+This should be used by every application as it creates a new service
+as a means of obtaining a value for the service's /DeviceInstance
+property.
+
+*path* should be set to the special value "/Settings/Devices/*service-name*/ClassAndVrmInstance".
+Exactly what value you supply for *service-name* is up to you, but it
+makes sense if it ties in the name you will use when you create your
+service.
+
+*tuple* should be set to a string of the form "*class*:*instance*",
+where *class* is the name of the service class ("tank" or whatever)
+and *instance* is a proposed DeviceInstance number.
+
+AddSetting will chack that the proposed *instance* number is unique
+within *class* and if it isn't modify *tuple* approprately before
+writing the value to *path* from which the calling application can
+recover it and extract the approved DeviceInstance number.
 
 
 
-As a side-effect this will create the D-Bus path
-/Settings/Devices/UniqueDeviceNumber/ClassAndVrmInstance and set its
+
 value appropriately.
 
 Add a new persistent setting and/or acquire a unique DeviceInstance
